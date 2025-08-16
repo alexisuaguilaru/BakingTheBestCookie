@@ -100,5 +100,44 @@ def _(CookiesRecipes, RecipeIndex):
     return
 
 
+@app.cell
+def _():
+    mo.md(r"# 2. Units Standardization")
+    return
+
+
+@app.cell
+def _():
+    mo.md(
+        r"""
+        For checking whether it is necessary to standardize units, the different units of measurement of an ingredietn are counted. If only one unit is used for an ingredient, then it is not necessary to standardize it.
+    
+        Because of there is one unit of measurement in each ingredient, it is not necessary to standardize units along the ingredients.
+        """
+    )
+    return
+
+
+@app.cell
+def _(CookiesRecipes, Ingredient, RecipeIndex, Unit):
+    # Counting of units of measurement for ingredient
+
+    _IngredientsUnits = CookiesRecipes.pivot_table(
+        RecipeIndex,
+        Ingredient,
+        Unit,
+        'count',
+    )
+
+    _UnitsByIngredients = _IngredientsUnits.apply(
+        lambda ingredient : len(pd.Series.unique(ingredient)),
+        axis=1,
+    )
+
+    # There are two type of values in each row/ingredient (nan values and a positive integer)
+    # _UnitsByIngredients.unique()
+    return
+
+
 if __name__ == "__main__":
     app.run()
