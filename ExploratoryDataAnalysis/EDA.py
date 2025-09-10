@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.17"
+__generated_with = "0.15.2"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -50,9 +50,12 @@ def _(PATH_DATASET):
 
     CookiesRecipes = pd.read_csv(
         PATH_DATASET,
-        index_col=0,
+        index_col = 0,
     )
-    CookiesRecipes.drop(columns=['Unnamed: 0'],inplace=True)
+    CookiesRecipes.drop(
+        columns = ['Unnamed: 0'],
+        inplace = True,
+    )
     return (CookiesRecipes,)
 
 
@@ -76,7 +79,7 @@ def _():
     Quantity = 'Quantity'
     Unit = 'Unit'
     Rating = 'Rating'
-    return Ingredient, RecipeIndex, Unit
+    return Ingredient, Quantity, RecipeIndex, Unit
 
 
 @app.cell
@@ -102,7 +105,7 @@ def _(CookiesRecipes, RecipeIndex):
 
 @app.cell
 def _():
-    mo.md(r"# 2. Units Standardization")
+    mo.md(r"## 1.1. Units Standardization")
     return
 
 
@@ -131,11 +134,48 @@ def _(CookiesRecipes, Ingredient, RecipeIndex, Unit):
 
     _UnitsByIngredients = _IngredientsUnits.apply(
         lambda ingredient : len(pd.Series.unique(ingredient)),
-        axis=1,
+        axis = 1,
     )
 
     # There are two type of values in each row/ingredient (nan values and a positive integer)
     # _UnitsByIngredients.unique()
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"# 2. Cookies Ingredients")
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"For each recipe cookie, the quantities of its ingredients are colleted, in order to compare two recipes based on the presence of some ingredient (or common ingredients). With this criteria, a metric or distance could be defined, which will be used to perform clustering with different techniques. Therefore, profiles or types of cookies can be found with these clustering techniques, although these profiles might be isolated between them, because of not all cookies have the same ingredients.")
+    return
+
+
+@app.cell
+def _(CookiesRecipes, Ingredient, Quantity, RecipeIndex):
+    # Getting ingredients of each cookie
+
+    CookiesIngredients = CookiesRecipes.pivot_table(
+        Quantity,
+        RecipeIndex,
+        Ingredient,
+        aggfunc = 'sum',
+        fill_value = 0.,
+    )
+    return (CookiesIngredients,)
+
+
+@app.cell
+def _(CookiesIngredients):
+    mo.vstack(
+        [
+            mo.center(mo.md("**Examples of Ingredients by Cookie**")),
+            CookiesIngredients,
+        ]
+    )
     return
 
 
