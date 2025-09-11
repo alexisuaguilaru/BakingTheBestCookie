@@ -21,7 +21,7 @@ def _():
     PATH = './Datasets/'
     PATH_DATASET = PATH + 'choc_chip_cookie_ingredients.csv'
     RANDOM_STATE = 8013
-    return (PATH_DATASET,)
+    return PATH_DATASET, RANDOM_STATE
 
 
 @app.cell
@@ -206,13 +206,13 @@ def _(CookiesIngredients):
     _fig , _axes = plt.subplots()
     dendrogram(
         _results,
-        25,
-        'lastp',
+        # 25,
+        # 'lastp',
         ax = _axes,
     )
     _axes.set_ylabel('Distance')
     _axes.set_xlabel('Clusters')
-    _axes.set_title('Dendogram')
+    _axes.set_title('Dendrogram')
 
     _fig
     return
@@ -241,6 +241,27 @@ def _(CookiesIngredients):
     _axes.plot(_num_clusters,_scores,':.b')
     _axes.set_xlabel('Number of Clusters')
     _axes.set_ylabel('Silhouette Score')
+    return
+
+
+@app.cell
+def _(CookiesIngredients, RANDOM_STATE):
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.preprocessing import StandardScaler
+
+    _standard = StandardScaler()
+    _DimensionReduction = TruncatedSVD(
+        n_components = 5,
+        random_state = RANDOM_STATE,
+    )
+    _ReducedDataset = _DimensionReduction.fit_transform(
+        _standard.fit_transform(CookiesIngredients)
+    )
+
+    sns.scatterplot(
+        x = _ReducedDataset[:,0],
+        y = _ReducedDataset[:,1],
+    )
     return
 
 
