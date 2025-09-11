@@ -20,6 +20,7 @@ def _():
 
     PATH = './Datasets/'
     PATH_DATASET = PATH + 'choc_chip_cookie_ingredients.csv'
+    RANDOM_STATE = 8013
     return (PATH_DATASET,)
 
 
@@ -176,6 +177,70 @@ def _(CookiesIngredients):
             CookiesIngredients,
         ]
     )
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"# 3. Types of Cookies")
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"")
+    return
+
+
+@app.cell
+def _(CookiesIngredients):
+    from scipy.spatial.distance import jaccard
+    from scipy.cluster.hierarchy import linkage , dendrogram
+
+    _results = linkage(
+        CookiesIngredients,
+        'complete',
+        jaccard,
+    )
+
+    _fig , _axes = plt.subplots()
+    dendrogram(
+        _results,
+        25,
+        'lastp',
+        ax = _axes,
+    )
+    _axes.set_ylabel('Distance')
+    _axes.set_xlabel('Clusters')
+    _axes.set_title('Dendogram')
+
+    _fig
+    return
+
+
+@app.cell
+def _(CookiesIngredients):
+    from sklearn.cluster import AgglomerativeClustering
+    from sklearn.metrics import silhouette_score
+
+    _num_clusters = range(2,10)
+    _scores = []
+    for _clusters in _num_clusters:
+        _clustering = AgglomerativeClustering(
+            n_clusters = _clusters,
+            metric = 'jaccard',
+            linkage = 'complete',
+        )
+
+        _clustering.fit(CookiesIngredients>0)
+
+        _score = silhouette_score(CookiesIngredients>0,_clustering.labels_)
+        _scores.append(_score)
+
+    _fig , _axes = plt.subplots()
+    _axes.plot(_num_clusters,_scores,':.b')
+    _axes.set_xlabel('Number of Clusters')
+    _axes.set_ylabel('Silhouette Score')
     return
 
 
