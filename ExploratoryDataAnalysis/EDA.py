@@ -13,6 +13,18 @@ with app.setup:
     import seaborn as sns
     import matplotlib.pyplot as plt
 
+    from scipy.spatial.distance import jaccard
+    from scipy.cluster.hierarchy import linkage , dendrogram
+
+    from sklearn.pipeline import Pipeline
+    from sklearn.cluster import AgglomerativeClustering
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import silhouette_score
+
+    # Import auxiliar functions
+    import SourceExploratoryDataAnalysis as src
+
 
 @app.cell
 def _():
@@ -151,7 +163,7 @@ def _():
 
 @app.cell
 def _():
-    mo.md(r"For each recipe cookie, the quantities of its ingredients are colleted, in order to compare two recipes based on the presence of some ingredient (or common ingredients). With this criteria, a metric or distance could be defined, which will be used to perform clustering with different techniques. Therefore, profiles or types of cookies can be found with these clustering techniques, although these profiles might be isolated between them, because of not all cookies have the same ingredients.")
+    mo.md(r"For each recipe cookie, the quantities of its ingredients are colleted, in order to compare two recipes based on the presence of some ingredient (or common ingredients). With this criteria, a metric or distance could be defined, which will be used to perform clustering with different techniques (this description is equivalent to use [Jaccard Distance](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.jaccard.html)). Therefore, profiles or types of cookies can be found with these clustering techniques, although these profiles might be isolated between them, because of not all cookies have the same ingredients.")
     return
 
 
@@ -182,37 +194,57 @@ def _(CookiesIngredients):
 
 @app.cell
 def _():
-    mo.md(r"# 3. Types of Cookies")
+    mo.md(r"# 3. Visualization of Cookies")
     return
 
 
 @app.cell
 def _():
-    mo.md(r"")
+    mo.md(
+        r"""
+        Using [SVD](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.TruncatedSVD.html) for dimensionality reduction, it can be seen that the cookies are clustered or concentrated in a region. This means that there is no significative contraste between recipes.
+    
+        Through [Agglomerative Clustering](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html) with Jaccard distance and using different numbers of clusters, it can be observed that their Silhouette scores take low values, so there is not a good dispersion between clusters or, at least, the points are clustered in a single cluster.
+    
+        In the dendogram with Agglomerative Clustering, there are clusters that merge along the all possible values of distance this represents a constant growing of the clusters and therefore a unique cluster.
+        """
+    )
     return
 
 
 @app.cell
-def _(CookiesIngredients):
-    from scipy.spatial.distance import jaccard
-    from scipy.cluster.hierarchy import linkage , dendrogram
+def _(CookiesIngredients, RANDOM_STATE):
+    # Applying SVD for visualization of cookies ingredientes presence
 
-    _results = linkage(
-        CookiesIngredients,
-        'complete',
-        jaccard,
+    _Standard = StandardScaler()
+    _DimensionReduction = TruncatedSVD(
+        n_components = 5,
+        random_state = RANDOM_STATE,
+    )
+    _DimensionalityReduction = Pipeline(
+        [
+            ('Standard',_Standard),
+            ('DimensionReduction',_DimensionReduction),
+        ]
     )
 
-    _fig , _axes = plt.subplots()
-    dendrogram(
-        _results,
-        # 25,
-        # 'lastp',
+    _ReducedDataset = _DimensionalityReduction.fit_transform(
+        CookiesIngredients > 0
+    )
+
+    _fig , _axes = src.CreateCanvas()
+    sns.scatterplot(
+        x = _ReducedDataset[:,0],
+        y = _ReducedDataset[:,1],
         ax = _axes,
+        s = 24,
     )
-    _axes.set_ylabel('Distance')
-    _axes.set_xlabel('Clusters')
-    _axes.set_title('Dendrogram')
+    src.SetLabels(
+        _axes,
+        'PC1',
+        'PC2',
+        'Cookie Ingredients Visualization',
+    )
 
     _fig
     return
@@ -220,9 +252,32 @@ def _(CookiesIngredients):
 
 @app.cell
 def _(CookiesIngredients):
-    from sklearn.cluster import AgglomerativeClustering
-    from sklearn.metrics import silhouette_score
+    _results = linkage(
+        CookiesIngredients,
+        'complete',
+        jaccard,
+    )
 
+    _fig , _axes = src.CreateCanvas()
+    dendrogram(
+        _results,
+        25,
+        'lastp',
+        ax = _axes,
+    )
+    src.SetLabels(
+        _axes,
+        'Clusters',
+        'Distance',
+        'Dendrogram of Hierarchical Clustering',
+    )
+
+    _fig
+    return
+
+
+@app.cell
+def _(CookiesIngredients):
     _num_clusters = range(2,10)
     _scores = []
     for _clusters in _num_clusters:
@@ -237,31 +292,16 @@ def _(CookiesIngredients):
         _score = silhouette_score(CookiesIngredients>0,_clustering.labels_)
         _scores.append(_score)
 
-    _fig , _axes = plt.subplots()
+    _fig , _axes = src.CreateCanvas()
     _axes.plot(_num_clusters,_scores,':.b')
-    _axes.set_xlabel('Number of Clusters')
-    _axes.set_ylabel('Silhouette Score')
-    return
-
-
-@app.cell
-def _(CookiesIngredients, RANDOM_STATE):
-    from sklearn.decomposition import TruncatedSVD
-    from sklearn.preprocessing import StandardScaler
-
-    _standard = StandardScaler()
-    _DimensionReduction = TruncatedSVD(
-        n_components = 5,
-        random_state = RANDOM_STATE,
-    )
-    _ReducedDataset = _DimensionReduction.fit_transform(
-        _standard.fit_transform(CookiesIngredients)
+    src.SetLabels(
+        _axes,
+        'Number of Clusters',
+        'Silhouette Score',
+        'Silhouette Score on Different Number of Clusters',
     )
 
-    sns.scatterplot(
-        x = _ReducedDataset[:,0],
-        y = _ReducedDataset[:,1],
-    )
+    _fig
     return
 
 
