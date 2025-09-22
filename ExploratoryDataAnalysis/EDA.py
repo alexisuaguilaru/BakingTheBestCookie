@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.15.2"
+__generated_with = "0.16.0"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -9,6 +9,7 @@ with app.setup:
 
     # Import necessary libraries 
     import pandas as pd
+    import numpy as np
 
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ with app.setup:
 
     from sklearn.pipeline import Pipeline
     from sklearn.cluster import AgglomerativeClustering
-    from sklearn.decomposition import TruncatedSVD
+    from sklearn.decomposition import TruncatedSVD , FactorAnalysis
     from sklearn.preprocessing import StandardScaler
     from sklearn.metrics import silhouette_score
 
@@ -194,7 +195,7 @@ def _(CookiesIngredients):
 
 @app.cell
 def _():
-    mo.md(r"# 3. Visualization of Cookies")
+    mo.md(r"# 3. Visualization and Clustering of Cookies")
     return
 
 
@@ -229,7 +230,7 @@ def _(CookiesIngredients, RANDOM_STATE):
     )
 
     _ReducedDataset = _DimensionalityReduction.fit_transform(
-        CookiesIngredients > 0
+        CookiesIngredients
     )
 
     _fig , _axes = src.CreateCanvas()
@@ -238,6 +239,7 @@ def _(CookiesIngredients, RANDOM_STATE):
         y = _ReducedDataset[:,1],
         ax = _axes,
         s = 24,
+        color = src.BaseColor,
     )
     src.SetLabels(
         _axes,
@@ -293,7 +295,12 @@ def _(CookiesIngredients):
         _scores.append(_score)
 
     _fig , _axes = src.CreateCanvas()
-    _axes.plot(_num_clusters,_scores,':.b')
+    _axes.plot(
+        _num_clusters,
+        _scores,
+        ':.',
+        color = src.BaseColor,
+    )
     src.SetLabels(
         _axes,
         'Number of Clusters',
@@ -302,6 +309,57 @@ def _(CookiesIngredients):
     )
 
     _fig
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"# 4. Factor Analysis")
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"")
+    return
+
+
+@app.cell
+def _(CookiesIngredients, RANDOM_STATE):
+    _Standard = StandardScaler()
+    _num_components = 5
+    _FactorAnalysis = FactorAnalysis(
+        n_components = _num_components,
+        random_state = RANDOM_STATE,
+        rotation = 'varimax',
+    )
+    _FactorAnalysisPipeline = Pipeline(
+        [
+            ('Standard',_Standard),
+            ('FactorAnalysis',_FactorAnalysis),
+        ]
+    )
+
+    _ReducedDataset = _FactorAnalysisPipeline.fit_transform(
+        CookiesIngredients
+    )
+
+    _explained_variance = np.var(_ReducedDataset,axis=0)
+    _explained_variance /= np.sum(_explained_variance)
+
+    LoadingsFactorsDataFrame = pd.DataFrame(
+        _FactorAnalysisPipeline['FactorAnalysis'].components_.T,
+        index = CookiesIngredients.columns,
+        columns = [f'Factor {_index_factor+1}' for _index_factor in range(_num_components)]
+    )
+    return (LoadingsFactorsDataFrame,)
+
+
+@app.cell
+def _(LoadingsFactorsDataFrame):
+    _Factor = 5
+    _Threshold = 0.5
+    LoadingsFactorsDataFrame[[f'Factor {_Factor}']].query(f"abs(`Factor {_Factor}`) > {_Threshold}")
     return
 
 
